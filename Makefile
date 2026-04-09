@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: up down logs health
+.PHONY: up down logs health release
 
 up:
 	./scripts/dev-up.sh
@@ -13,3 +13,6 @@ logs:
 
 health:
 	curl -fsS http://127.0.0.1:8787/health
+
+release:
+	pnpm run release

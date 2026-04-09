@@ -5,6 +5,14 @@ node_modules/
 .env.*
 !.env.example
 
+# Production env uploaded by release-bot (copy from .secrets/*.example)
+.secrets/*
+!.secrets/*.example
+!.secrets/.gitkeep
+
+# Bot runtime state (e.g. release pause flag)
+.data/
+
 # Runtime artifacts
 *.log
 *.pid

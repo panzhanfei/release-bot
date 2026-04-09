@@ -8,6 +8,7 @@
     "down:make": "./scripts/dev-down.sh",
     "logs:make": "./scripts/dev-logs.sh 200",
     "health:make": "curl -fsS http://127.0.0.1:8787/health",
+    "release": "tsx scripts/release.ts",
     "restart:env": "pm2 delete release-bot || true && pm2 start node --name release-bot --cwd . -- --import tsx agent.ts",
     "test:make": "echo \"Error: no test specified\" && exit 1"
   },

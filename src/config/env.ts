@@ -11,6 +11,8 @@ export const env = {
   RELEASE_WORKDIR: process.env.RELEASE_WORKDIR || "",
   RELEASE_BRANCH: process.env.RELEASE_BRANCH || "main",
   INSTALL_CMD: process.env.INSTALL_CMD || "pnpm install --frozen-lockfile",
+  /** Run in RELEASE_WORKDIR after install, before each module preBuild/build (monorepo packages/*). Empty = skip. */
+  RELEASE_PACKAGES_BUILD_CMD: process.env.RELEASE_PACKAGES_BUILD_CMD || "",
   BUILD_CMD: process.env.BUILD_CMD || "pnpm build",
   BUILD_ARTIFACT_PATH: process.env.BUILD_ARTIFACT_PATH || "dist",
   DEPLOY_HOST: process.env.DEPLOY_HOST || "",
