@@ -26,10 +26,9 @@ fi
 
 echo "[1/4] Starting or reloading $APP_NAME with pm2..."
 if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-  pm2 restart "$APP_NAME" --update-env >/dev/null
-else
-  pm2 start "npx tsx agent.ts" --name "$APP_NAME" >/dev/null
+  pm2 delete "$APP_NAME" >/dev/null || true
 fi
+pm2 start node --name "$APP_NAME" --cwd "$ROOT_DIR" -- --import tsx agent.ts >/dev/null
 
 echo "[2/4] Ensuring ngrok tunnel on port $PORT..."
 if [[ -f "$NGROK_PID_FILE" ]]; then
