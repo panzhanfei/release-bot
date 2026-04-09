@@ -1,0 +1,12 @@
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime artifacts
+*.log
+*.pid
+.ngrok.log
+.ngrok.pid

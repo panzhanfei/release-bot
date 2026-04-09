@@ -1,0 +1,28 @@
+{
+  "name": "release-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "up:make": "./scripts/dev-up.sh",
+    "down:make": "./scripts/dev-down.sh",
+    "logs:make": "./scripts/dev-logs.sh 200",
+    "health:make": "curl -fsS http://127.0.0.1:8787/health",
+    "restart:env": "pm2 restart release-bot --update-env || pm2 start \"npx tsx agent.ts\" --name release-bot",
+    "test:make": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
