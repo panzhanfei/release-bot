@@ -158,8 +158,12 @@ export async function deployRelease(moduleName?: string) {
     `${sshExe} ${shellEscape(sshTarget())} ${shellEscape(`mkdir -p ${deployPath}`)}`;
   await run(mkdirCmd, "/");
 
+  // 勿同步环境文件：产物里常有占位 .env.production，会覆盖服务器上已配置的真实密钥；--delete 下被 exclude 的远端文件默认不会被删（见 rsync 文档）
+  const rsyncExcludeEnv =
+    "--exclude '.env.production' --exclude '.env' --exclude '.env.local' --exclude '.env.development' ";
+
   const rsyncCmd =
-    `rsync -azL ${deleteFlag} -e ${shellEscape(sshExe)} ` +
+    `rsync -azL ${deleteFlag} ${rsyncExcludeEnv}-e ${shellEscape(sshExe)} ` +
     `${shellEscape(`${artifactDir}/`)} ` +
     `${shellEscape(`${sshTarget()}:${deployPath}/`)}`;
   const postDeployCmd = postDeployCmdRaw
