@@ -10,7 +10,6 @@ import {
   safeBranch,
   safeDeployRelPath,
   safeGitRef,
-  resolveEnvProductionLocalPath,
   shellEscape,
   trimOutput,
 } from "../utils/text";
@@ -129,7 +128,7 @@ export async function buildRelease(
   };
 }
 
-/** 部署：SSH mkdir → rsync 主产物 → rsyncExtras → 可选上传 .env.production → postDeployCmd → remoteRestartCmd */
+/** 部署：SSH mkdir → rsync 主产物 → rsyncExtras → postDeployCmd → remoteRestartCmd */
 export async function deployRelease(moduleName?: string) {
   const { module, config } = resolveModule(moduleName);
   ensureConfigured("DEPLOY_HOST", env.DEPLOY_HOST);
@@ -192,29 +191,10 @@ export async function deployRelease(moduleName?: string) {
     // -L/--copy-links: workspace packages often symlink into .pnpm (e.g. @prisma/client);
     // dereference so the server gets real files, not broken relative symlinks.
     const rsyncExtra =
-      `rsync -azL -e ${shellEscape(sshExe)} ` +
+      `rsync -azL ${rsyncExcludeEnv}-e ${shellEscape(sshExe)} ` +
       `${shellEscape(`${localDir}/`)} ` +
       `${shellEscape(`${sshTarget()}:${remoteDest}/`)}`;
     extraChunks.push(await run(rsyncExtra, "/"));
-  }
-
-  const envChunks: { stdout: string; stderr: string }[] = [];
-  const envFileCfg = config.envProductionFile?.trim();
-  if (envFileCfg) {
-    const localEnv = resolveEnvProductionLocalPath(envFileCfg);
-    try {
-      await access(localEnv);
-    } catch {
-      throw new Error(
-        `缺少本机生产环境文件: ${localEnv}\n请将对应 .example 复制为该路径并填写真实值（勿提交 git）。`
-      );
-    }
-    const remoteEnv = `${deployPath.replace(/\/+$/, "")}/.env.production`;
-    const rsyncEnv =
-      `rsync -az -e ${shellEscape(sshExe)} ` +
-      `${shellEscape(localEnv)} ` +
-      `${shellEscape(`${sshTarget()}:${remoteEnv}`)}`;
-    envChunks.push(await run(rsyncEnv, "/"));
   }
 
   const postDeployRes = postDeployCmd ? await run(postDeployCmd, "/") : { stdout: "", stderr: "" };
@@ -225,8 +205,6 @@ export async function deployRelease(moduleName?: string) {
     stdout: [
       uploadRes.stdout,
       ...extraChunks.map((c) => c.stdout),
-      ...envChunks.map((c) => c.stdout),
-      envChunks.length ? "(uploaded remote .env.production)\n" : "",
       postDeployRes.stdout,
       restartRes.stdout,
     ]
@@ -235,7 +213,6 @@ export async function deployRelease(moduleName?: string) {
     stderr: [
       uploadRes.stderr,
       ...extraChunks.map((c) => c.stderr),
-      ...envChunks.map((c) => c.stderr),
       postDeployRes.stderr,
       restartRes.stderr,
     ]
@@ -249,7 +226,7 @@ export async function deployRelease(moduleName?: string) {
  * 1. 拉取发布仓代码（fetch / checkout / reset / clean）
  * 2. 安装依赖 + 全仓 packages 构建（若配置了 RELEASE_PACKAGES_BUILD_CMD）
  * 3. 按模块依次打包（preBuild + buildCmd，不再拉代码、不再重复 install/packages）
- * 4. 按模块依次：上传（rsync 主产物 + extras + 可选 .env）→ 远程 postDeployCmd → 远程重启
+ * 4. 按模块依次：上传（rsync 主产物 + extras）→ 远程 postDeployCmd → 远程重启
  */
 export async function releasePipeline(options: {
   moduleNames?: string[];

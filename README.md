@@ -36,7 +36,7 @@ curl -fsS http://127.0.0.1:8787/health
 | 类别 | 说明 |
 |------|------|
 | `RELEASE_REPO_URL` / `RELEASE_WORKDIR` / `RELEASE_BRANCH` | 发布仓克隆目录与分支 |
-| `RELEASE_MODULES_JSON` | 多模块 JSON：`installCmd`、`buildCmd`、`artifactPath`、`deployPath`、`remoteRestartCmd`、`postDeployCmd`、`rsyncExtras`、`envProductionFile` 等 |
+| `RELEASE_MODULES_JSON` | 多模块 JSON：`installCmd`、`buildCmd`、`artifactPath`、`deployPath`、`remoteRestartCmd`、`postDeployCmd`、`rsyncExtras` 等 |
 | `RELEASE_PACKAGES_BUILD_CMD` | 可选；发布流水线在「安装依赖后、各应用构建前」执行一次（如 `pnpm exec turbo run build --filter=./packages/*`） |
 | `DEPLOY_HOST` / `DEPLOY_USER` / `SSH_PORT` | SSH 与 rsync 目标 |
 | `FEISHU_*` | 飞书机器人（Webhook） |
@@ -52,7 +52,7 @@ curl -fsS http://127.0.0.1:8787/health
 1. **拉取代码**：`git fetch`、checkout、`reset --hard`、`git clean -fd`  
 2. **安装依赖** + **全仓 packages 构建**（若配置了 `RELEASE_PACKAGES_BUILD_CMD`）  
 3. **按模块构建**：各模块 `preBuildCmd` + `buildCmd`  
-4. **按模块部署**：`server` 会排在其他模块之前（若本次包含 `server`）；每模块依次 **rsync 主产物** → **rsyncExtras** → 可选 **`.env.production`** → **`postDeployCmd`** → **`remoteRestartCmd`**
+4. **按模块部署**：`server` 会排在其他模块之前（若本次包含 `server`）；每模块依次 **rsync 主产物** → **rsyncExtras** → **`postDeployCmd`** → **`remoteRestartCmd`**（生产 `.env*` 仅在服务器上维护，发布不会上传）
 
 CLI 一键发布：
 

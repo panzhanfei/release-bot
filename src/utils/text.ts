@@ -1,4 +1,3 @@
-import path from "node:path";
 import { getAllModuleNames, resolveModule } from "../config/env";
 
 export function shellEscape(v: string) {
@@ -10,29 +9,6 @@ export function safeBranch(v: string) {
     throw new Error("invalid branch name");
   }
   return v;
-}
-
-/**
- * Resolve local file path for env upload. Relative paths must stay under cwd (release-bot root).
- * Absolute paths are allowed (e.g. ~/.secrets/server.env).
- */
-export function resolveEnvProductionLocalPath(configPath: string): string {
-  const t = configPath.trim();
-  if (!t) {
-    throw new Error("envProductionFile is empty");
-  }
-  if (path.isAbsolute(t)) {
-    return path.normalize(t);
-  }
-  const cwd = process.cwd();
-  const resolved = path.resolve(cwd, t);
-  const rel = path.relative(cwd, resolved);
-  if (rel.startsWith("..") || path.isAbsolute(rel)) {
-    throw new Error(
-      `envProductionFile must be under release-bot directory (${cwd})`
-    );
-  }
-  return resolved;
 }
 
 /** Repo-relative path segment for rsyncExtras (no absolute paths, no `..`). */

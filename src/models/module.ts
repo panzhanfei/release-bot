@@ -20,10 +20,4 @@ export type ModuleConfig = {
    * packages) into paths under deployPath. Does not use `--delete` on extras.
    */
   rsyncExtras?: RsyncExtra[];
-  /**
-   * Local file (path relative to release-bot cwd, or absolute) rsync'd to
-   * `{deployPath}/.env.production` on the remote host before postDeploy/restart.
-   * Keep the real file out of git (e.g. under `.secrets/`).
-   */
-  envProductionFile?: string;
 };
