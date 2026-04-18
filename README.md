@@ -72,7 +72,7 @@ curl -fsS http://127.0.0.1:8787/health
 1. **拉取代码**：`git fetch`、checkout、`reset --hard`、`git clean -fd`  
 2. **安装依赖** + **全仓 packages 构建**（若配置了 `RELEASE_PACKAGES_BUILD_CMD`）  
 3. **按模块构建**：各模块 `preBuildCmd` + `buildCmd`  
-4. **按模块部署**：`server` 会排在其他模块之前（若本次包含 `server`）；每模块依次 **rsync 主产物** → **rsyncExtras** → **`postDeployCmd`** → **`remoteRestartCmd`**（生产 `.env*` 仅在服务器上维护，发布不会上传）
+4. **按模块部署**：`vendor-sentinel`（若有）→ `server` → 其余模块；每模块依次 **rsync 主产物**（默认 `-L` 跟随软链，并排除 `.env*` 与 **infra 基线**：`ecosystem.config.cjs`、`docker-compose.yml`、`Caddyfile`、`caddy.d/`、`scripts/`）→ **rsyncExtras** → **`postDeployCmd`** → **`remoteRestartCmd`**。密钥与 PM2/Compose 等仅在服务器 **sentinel-infra** 维护；`RELEASE_RSYNC_INFRA_EXCLUDES=false` 可关闭除 `.env*` 外的 infra 排除。
 
 CLI：
 

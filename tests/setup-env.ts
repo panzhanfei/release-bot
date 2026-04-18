@@ -23,6 +23,8 @@ process.env.RELEASE_MODULES_JSON = JSON.stringify({
     remoteRestartCmd: "bash -lc true",
     buildCmd: "echo server-build",
     installCmd: "echo install-server",
+    /** Contract tests mock I/O and do not create artifact package.json on disk. */
+    rewriteWorkspaceDepsInPackageJson: false,
   },
   "main-next": {
     deployPath: "/remote/main-next",
@@ -31,5 +33,6 @@ process.env.RELEASE_MODULES_JSON = JSON.stringify({
     buildCmd: "echo next-build",
     installCmd: "echo install-next",
     postDeployCmd: "bash -lc true",
+    rewriteWorkspaceDepsInPackageJson: false,
   },
 });

@@ -42,7 +42,7 @@ export const env = {
     process.env.REMOTE_PRISMA_SERVER_DEPLOY_PATH || "",
   REMOTE_PRISMA_SCHEMA_REL:
     process.env.REMOTE_PRISMA_SCHEMA_REL ||
-    "node_modules/@sentinel/database/prisma/schema.prisma",
+    "vendor/database/prisma/schema.prisma",
   REMOTE_PRISMA_GEN_TMP:
     process.env.REMOTE_PRISMA_GEN_TMP || "/tmp/sentinel-prisma-gen",
   /**
@@ -55,19 +55,40 @@ export const env = {
   REMOTE_PRISMA_GENERATE_DATABASE_URL:
     process.env.REMOTE_PRISMA_GENERATE_DATABASE_URL ||
     "postgresql://127.0.0.1:5432/__prisma_generate_only__",
+  /**
+   * When not "false": rsync 主产物与 rsyncExtras 额外排除 infra 基线文件（ecosystem、docker、caddy、scripts 等），
+   * 避免误传产物覆盖服务器 sentinel-infra 根目录由人维护的文件；与规范「密钥与 PM2 只在服务器」一致。
+   */
+  RELEASE_RSYNC_INFRA_EXCLUDES:
+    process.env.RELEASE_RSYNC_INFRA_EXCLUDES !== "false",
+  /**
+   * Optional JSON object: package name -> file: spec for rewriteWorkspaceDepsInPackageJson.
+   * Example: {"@sentinel/auth":"file:../vendor-sentinel/auth",...}
+   */
+  RELEASE_WORKSPACE_DEPS_REWRITE_JSON:
+    process.env.RELEASE_WORKSPACE_DEPS_REWRITE_JSON || "",
 };
 
 export function ensureConfigured(name: string, value: string) {
   if (!value) throw new Error(`missing env: ${name}`);
 }
 
+/** 运行时读取（勿用快照的 env.RELEASE_WORKDIR：模块先于 dotenv 加载时会一直是空字符串）。 */
+export function getReleaseWorkdir(): string {
+  const w = (process.env.RELEASE_WORKDIR || "").trim();
+  if (!w) {
+    throw new Error(
+      "RELEASE_WORKDIR 未设置。请在 .env 中填写 monorepo 绝对路径并执行 pm2 restart release-bot（或 pnpm run restart:env）。"
+    );
+  }
+  return w;
+}
+
 export function parseModulesConfig(): Record<string, ModuleConfig> {
-  if (!env.RELEASE_MODULES_JSON.trim()) return {};
+  const raw = process.env.RELEASE_MODULES_JSON || "";
+  if (!raw.trim()) return {};
   try {
-    const parsed = JSON.parse(env.RELEASE_MODULES_JSON) as Record<
-      string,
-      ModuleConfig
-    >;
+    const parsed = JSON.parse(raw) as Record<string, ModuleConfig>;
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     throw new Error("invalid RELEASE_MODULES_JSON");
