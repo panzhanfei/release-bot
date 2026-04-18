@@ -5,9 +5,10 @@ alwaysApply: true
 
 # release-bot: restart after changes
 
-When you finish edits that affect runtime behavior (TypeScript under `src/`, `agent.ts`, `.env`, `package.json`, or PM2-related scripts), **in the same turn**:
+When you finish edits that affect runtime behavior (TypeScript under `src/`, `agent.ts`, `.env`, `package.json`, `tests/`, `vitest.config.ts`, or PM2-related scripts), **in the same turn**:
 
-1. From the project root run: `pnpm run restart:env`
-2. Confirm: `curl -fsS http://127.0.0.1:8787/health` returns `{"ok":true,...}`
+1. From the project root run: `pnpm test` (contract tests: full publish order + git rollback ref; mocked shell/fs — no real SSH).
+2. From the project root run: `pnpm run restart:env`
+3. Confirm: `curl -fsS http://127.0.0.1:8787/health` returns `{"ok":true,...}`
 
 If PM2 is not used in the environment, say so instead of failing silently.

@@ -42,8 +42,28 @@ curl -fsS http://127.0.0.1:8787/health
 | `FEISHU_*` | 飞书机器人（Webhook） |
 | `AGENT_TOKEN` | 调用 `POST /run` 时请求头 `x-agent-token` |
 | `RELEASE_CONFIRM_TOKEN` | 可选；设置后「发布」「回滚」需附带确认码 |
+| `RELEASE_AUTO_ROLLBACK_ON_DEPLOY_FAIL` | 默认开启；设为 `false` 时关闭部署前远端快照与失败自动恢复（见下节） |
 
 修改 **`src/`、`agent.ts`、`.env`、`package.json`** 等影响运行行为后，建议执行 **`pnpm run restart:env`** 并再次请求 `/health`。
+
+## 部署失败与回滚
+
+**自动恢复快照（文件级）**
+
+- 当 `RELEASE_AUTO_ROLLBACK_ON_DEPLOY_FAIL` 不为 `false` 时，每次 **部署** 在 rsync 覆盖远端目录前，若该 `deployPath` 下已有内容，会先把当前目录完整镜像到同级目录 **`<deployPath>.release-bot-prev`**（`rsync --delete`）。
+- 若 **rsync / rsyncExtras / postDeployCmd / remoteRestartCmd** 任一步失败：
+  - **单模块**：自动把 `<deployPath>.release-bot-prev` 拷回 `deployPath`，并再次执行该模块的 `remoteRestartCmd`，错误信息中会说明已尝试回滚。
+  - **多模块一键发布**：当前模块会按上一条自救；此前已成功部署的模块会按 **逆序** 用各自的 `.release-bot-prev` 恢复并执行对应重启命令。
+- **首次部署**（远端目录为空）不会生成快照，失败时无法做文件级恢复，需改用 **git 回滚** 或手工处理。
+- 快照目录与 `deployPath` 并列，例如 `deployPath` 为 `/root/sentinel-infra/server` 时，快照为 `/root/sentinel-infra/server.release-bot-prev`。磁盘会多保留一份上一版产物，可按需定期清理旧快照或接受占用。
+
+**Git 回滚（代码级）**
+
+- 飞书：`回滚 <模块名|全部> <commit|tag|分支> [确认码 xxx]`
+- HTTP：`action: rollback-release`，body 带 `gitRef`、`moduleName`（或 `all`）、`confirmToken`（若配置了确认码）
+- CLI：`pnpm run release rollback <模块|all> <gitRef> --confirm=<RELEASE_CONFIRM_TOKEN>`
+
+含义是在 **发布仓** 检出指定引用后，再走与「发布」相同的构建与部署流程，用于回到历史 **源码版本**；与「部署失败自动恢复快照」互补（快照只恢复 **上一次已成功同步到该目录的文件树**，不涉及 git 历史）。
 
 ## 发布流水线（`releasePipeline`）
 
@@ -54,11 +74,13 @@ curl -fsS http://127.0.0.1:8787/health
 3. **按模块构建**：各模块 `preBuildCmd` + `buildCmd`  
 4. **按模块部署**：`server` 会排在其他模块之前（若本次包含 `server`）；每模块依次 **rsync 主产物** → **rsyncExtras** → **`postDeployCmd`** → **`remoteRestartCmd`**（生产 `.env*` 仅在服务器上维护，发布不会上传）
 
-CLI 一键发布：
+CLI：
 
 ```bash
 pnpm run release all --confirm=<RELEASE_CONFIRM_TOKEN>
 pnpm run release server
+pnpm run release rollback server abc1234 --confirm=<RELEASE_CONFIRM_TOKEN>
+pnpm run release rollback all v1.2.3 --confirm=<RELEASE_CONFIRM_TOKEN>
 ```
 
 ## HTTP 接口
@@ -73,7 +95,7 @@ pnpm run release server
 - `build-release` — 仅构建（可带 `moduleName`）  
 - `deploy-release` — 仅部署（需本地已有产物）  
 - `release` — 完整发布（可 `moduleName` 或 `all`，可能需 `confirmToken`）  
-- `rollback-release` — 检出指定 `gitRef` 后走同一套发布（需 `confirmToken` 若已配置）  
+- `rollback-release` — 在发布仓检出指定 `gitRef` 后走同一套发布（需 `confirmToken` 若已配置）；与部署失败时的 `.release-bot-prev` 自动恢复不同  
 - `pause-release` / `resume-release` — 暂停/恢复发布与部署类操作  
 
 ## 飞书

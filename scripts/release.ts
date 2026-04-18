@@ -1,9 +1,10 @@
 import "dotenv/config";
-import { env } from "../src/config/env";
+import { env, resolveModule } from "../src/config/env";
 import {
   releasePipeline,
   resolveReleaseModules,
 } from "../src/services/release.service";
+import { safeGitRef } from "../src/utils/text";
 
 function parseArgs(argv: string[]) {
   let confirm: string | undefined;
@@ -27,7 +28,36 @@ async function main() {
     process.exit(1);
   }
 
-  const spec = positional[0];
+  const head = positional[0];
+  if (head === "rollback") {
+    const modSpec = positional[1];
+    const gitRefRaw = positional.slice(2).join(" ").trim();
+    if (!modSpec || !gitRefRaw) {
+      console.error(
+        "用法: pnpm run release rollback <模块名|all> <commit|tag|分支> [--confirm=...]"
+      );
+      process.exit(1);
+    }
+    const gitRef = safeGitRef(gitRefRaw);
+    if (modSpec !== "all" && !resolveModule(modSpec).module) {
+      console.error(`未知模块: ${modSpec}（请使用 RELEASE_MODULES_JSON 中的模块名或 all）`);
+      process.exit(1);
+    }
+    const moduleNames = resolveReleaseModules(modSpec === "all" ? "all" : modSpec);
+    if (!moduleNames.length) {
+      console.error(
+        "未解析到任何模块：请配置 RELEASE_MODULES_JSON，或指定已配置模块名，或 all"
+      );
+      process.exit(1);
+    }
+    console.log(`Git 回滚开始，引用: ${gitRef}，模块: ${moduleNames.join(", ")}`);
+    const out = await releasePipeline({ moduleNames, gitRef });
+    console.log(out);
+    console.log("Git 回滚结束");
+    return;
+  }
+
+  const spec = head;
   const moduleNames = resolveReleaseModules(
     spec === "all" ? "all" : spec
   );

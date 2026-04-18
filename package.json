@@ -10,7 +10,8 @@
     "health:make": "curl -fsS http://127.0.0.1:8787/health",
     "release": "tsx scripts/release.ts",
     "restart:env": "pm2 delete release-bot || true && pm2 start node --name release-bot --cwd . -- --import tsx agent.ts",
-    "test:make": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +25,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.2",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^3.2.4"
   }
 }
